@@ -18,23 +18,13 @@ platform-runcmd = qemu-system-riscv$(PLATFORM_RISCV_XLEN) -M virt -m 256M \
   -nographic -bios $(build_dir)/platform/ratona/firmware/fw_payload.elf
 
 # Blobs to build
-FW_TEXT_START=0x80000000
+FW_TEXT_START=0x81F00000
 FW_DYNAMIC=y
 FW_JUMP=y
-ifeq ($(PLATFORM_RISCV_XLEN), 32)
-  # This needs to be 4MB aligned for 32-bit system
-  FW_JUMP_ADDR=$(shell printf "0x%X" $$(($(FW_TEXT_START) + 0x400000)))
-else
-  # This needs to be 2MB aligned for 64-bit system
-  FW_JUMP_ADDR=$(shell printf "0x%X" $$(($(FW_TEXT_START) + 0x200000)))
-endif
-FW_JUMP_FDT_ADDR=$(shell printf "0x%X" $$(($(FW_TEXT_START) + 0x2200000)))
+FW_JUMP_ADDR=0x80000000
+FW_JUMP_FDT_ADDR=0x81EF0000
 FW_PAYLOAD=y
-ifeq ($(PLATFORM_RISCV_XLEN), 32)
-  # This needs to be 4MB aligned for 32-bit system
-  FW_PAYLOAD_OFFSET=0x400000
-else
-  # This needs to be 2MB aligned for 64-bit system
-  FW_PAYLOAD_OFFSET=0x200000
-endif
-FW_PAYLOAD_FDT_ADDR=$(FW_JUMP_FDT_ADDR)
+# Yes, it wraps around. It would be neat if the .ld defines this offset absolute. 
+# The true value is just 0x80000000
+FW_PAYLOAD_OFFSET=0xFE100000
+FW_PAYLOAD_FDT_ADDR=0x81EF0000

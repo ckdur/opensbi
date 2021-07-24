@@ -144,6 +144,49 @@ void fdt_debug_interrupts_fixup(void *fdt)
   fdt_delprop(fdt, debug_offset, "interrupts-extended");
 }
 
+// fdt_nodtbmem_fixup - removes the memory and replaces it with a rom
+void fdt_nodtbmem_fixup(void *fdt)
+{
+  int na = fdt_address_cells(fdt, 0);
+	int ns = fdt_size_cells(fdt, 0);
+	fdt32_t reg[4];
+	fdt32_t *val;
+	int mem_offset, err, soc_offset, rom_offset;
+
+	mem_offset = fdt_path_offset(fdt, "/memory@82200000");
+	if (mem_offset < 0)
+		return;
+
+  err = fdt_del_node(fdt, mem_offset);
+	if (err < 0)
+		return;
+  
+  err = fdt_pack(fdt);
+	if (err < 0)
+		return;
+
+	soc_offset = fdt_path_offset(fdt, "/soc");
+	if (soc_offset < 0)
+		return;
+  
+  rom_offset = fdt_add_subnode(fdt, soc_offset, "rom@82200000");
+  if (rom_offset < 0)
+	  return;
+	fdt_appendprop(fdt, rom_offset, "compatible", "sifive,maskrom0", sizeof("sifive,maskrom0"));
+	
+	/* encode the <reg> property value */
+	val = reg;
+	if (na > 1)
+		*val++ = cpu_to_fdt32(0x0);
+	*val++ = cpu_to_fdt32(0x82200000);
+	if (ns > 1)
+		*val++ = cpu_to_fdt32(0x0);
+	*val++ = cpu_to_fdt32(0x4000);
+	
+	fdt_appendprop(fdt, rom_offset, "reg", reg,
+			  (na + ns) * sizeof(fdt32_t));
+}
+
 static int generic_final_init(bool cold_boot)
 {
 	void *fdt;
